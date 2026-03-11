@@ -35,6 +35,7 @@ add_action( 'admin_init', function () {
         echo '<p>Configura los colores, posición y estilo del widget.</p>';
     }, 'fpvsi-a11y-settings' );
 
+    add_settings_field( 'fpvsi_activation_mode', 'Modo de activación', 'fpvsi_a11y_field_activation_mode', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_primary_color', 'Color primario', 'fpvsi_a11y_field_primary_color', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_accent_color', 'Color acento', 'fpvsi_a11y_field_accent_color', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_position', 'Posición', 'fpvsi_a11y_field_position', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
@@ -70,6 +71,13 @@ add_action( 'admin_init', function () {
  */
 function fpvsi_a11y_sanitize_config( $input ) {
     $output = [];
+
+    // Activation mode
+    if ( ! empty( $input['activation_mode'] ) ) {
+        $output['activation_mode'] = in_array( $input['activation_mode'], [ 'global', 'elementor' ], true )
+            ? $input['activation_mode']
+            : 'global';
+    }
 
     if ( ! empty( $input['primary_color'] ) ) {
         $output['primary_color'] = sanitize_hex_color( $input['primary_color'] );
@@ -147,6 +155,21 @@ function fpvsi_a11y_sanitize_config( $input ) {
 
 function fpvsi_a11y_get_config() {
     return get_option( 'fpvsi_a11y_config', [] );
+}
+
+function fpvsi_a11y_field_activation_mode() {
+    $config = fpvsi_a11y_get_config();
+    $val = ! empty( $config['activation_mode'] ) ? $config['activation_mode'] : 'global';
+    $has_elementor = did_action( 'elementor/loaded' );
+    echo '<select name="fpvsi_a11y_config[activation_mode]">';
+    echo '<option value="global"' . selected( $val, 'global', false ) . '>Global — Todas las páginas (desde Ajustes)</option>';
+    echo '<option value="elementor"' . selected( $val, 'elementor', false ) . ( ! $has_elementor ? ' disabled' : '' ) . '>Solo Elementor — Usar widget de Elementor</option>';
+    echo '</select>';
+    if ( ! $has_elementor ) {
+        echo '<p class="description" style="color:#d63638;">Elementor no está activo. Instala y activa Elementor para usar este modo.</p>';
+    } else {
+        echo '<p class="description"><strong>Global:</strong> El widget aparece en todas las páginas con la config de Ajustes.<br><strong>Solo Elementor:</strong> El widget solo aparece donde coloques el widget de Elementor (ideal en footer global con Theme Builder).</p>';
+    }
 }
 
 function fpvsi_a11y_field_primary_color() {

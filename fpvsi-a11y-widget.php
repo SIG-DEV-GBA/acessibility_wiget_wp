@@ -3,7 +3,7 @@
  * Plugin Name: FPVSI Accessibility Widget
  * Plugin URI:  https://github.com/SIG-DEV-GBA/accesibility_widged
  * Description: Widget de accesibilidad con lector de voz (TTS), ajustes visuales y selector de idiomas.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      SIG-DEV-GBA
  * Author URI:  https://github.com/SIG-DEV-GBA
  * License:     MIT
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'FPVSI_A11Y_VERSION', '1.0.0' );
+define( 'FPVSI_A11Y_VERSION', '1.1.0' );
 define( 'FPVSI_A11Y_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FPVSI_A11Y_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -81,7 +81,16 @@ function fpvsi_a11y_build_config() {
 }
 
 /**
+ * Obtener modo de activación
+ */
+function fpvsi_a11y_get_mode() {
+    $saved = get_option( 'fpvsi_a11y_config', [] );
+    return ! empty( $saved['activation_mode'] ) ? $saved['activation_mode'] : 'global';
+}
+
+/**
  * Enqueue assets en el frontend
+ * CSS y JS se cargan siempre (Elementor widget los necesita también)
  */
 add_action( 'wp_enqueue_scripts', function () {
     wp_enqueue_style(
@@ -99,16 +108,21 @@ add_action( 'wp_enqueue_scripts', function () {
         true
     );
 
-    // Inyectar config como JSON real (preserva tipos: number, array, object)
-    $config = fpvsi_a11y_build_config();
-    $json = wp_json_encode( $config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-    wp_add_inline_script( 'fpvsi-a11y', 'var fpvsiA11yConfig = ' . $json . ';', 'before' );
+    // Solo inyectar config global en modo "global"
+    if ( fpvsi_a11y_get_mode() === 'global' ) {
+        $config = fpvsi_a11y_build_config();
+        $json = wp_json_encode( $config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+        wp_add_inline_script( 'fpvsi-a11y', 'var fpvsiA11yConfig = ' . $json . ';', 'before' );
+    }
 });
 
 /**
- * Auto-init en footer (solo si Elementor no lo ha hecho ya)
+ * Auto-init en footer (solo en modo "global" y si Elementor no lo ha hecho ya)
  */
 add_action( 'wp_footer', function () {
+    if ( fpvsi_a11y_get_mode() !== 'global' ) {
+        return;
+    }
     global $fpvsi_a11y_elementor_active;
     if ( ! empty( $fpvsi_a11y_elementor_active ) ) {
         return;
