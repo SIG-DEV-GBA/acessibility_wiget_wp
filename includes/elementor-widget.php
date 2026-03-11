@@ -308,19 +308,21 @@ class Fpvsi_A11y_Elementor_Widget extends \Elementor\Widget_Base {
         // En el editor de Elementor, mostrar placeholder visual
         if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
             echo '<div style="padding:20px;background:#f0f0f0;border:2px dashed #A10D5E;border-radius:8px;text-align:center;font-family:sans-serif;">';
-            echo '<p style="margin:0 0 4px;font-weight:600;color:#A10D5E;">♿ FPVSI Accessibility Widget</p>';
-            echo '<p style="margin:0;color:#666;font-size:13px;">El widget flotante se renderiza en el frontend.</p>';
+            echo '<p style="margin:0 0 4px;font-weight:600;color:#A10D5E;">&#9855; FPVSI Accessibility Widget</p>';
+            echo '<p style="margin:0;color:#666;font-size:13px;">Configura el widget aqu&iacute;. Aparece en todas las p&aacute;ginas del sitio.</p>';
             echo '</div>';
+
+            // Guardar config en wp_options al publicar/guardar desde Elementor
+            $config = $this->build_elementor_config();
+            update_option( 'fpvsi_a11y_elementor_config', $config, false );
             return;
         }
 
-        // Frontend: marcar flag global e inyectar init con la config de Elementor
+        // Frontend: guardar config y marcar flag
+        $config = $this->build_elementor_config();
+        update_option( 'fpvsi_a11y_elementor_config', $config, false );
+
         global $fpvsi_a11y_elementor_active;
         $fpvsi_a11y_elementor_active = true;
-
-        $config = $this->build_elementor_config();
-        $json   = wp_json_encode( $config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-
-        echo '<script>document.addEventListener("DOMContentLoaded",function(){if(typeof FpvsiA11yWidget!=="undefined"){FpvsiA11yWidget.init(' . $json . ');}});</script>';
     }
 }
