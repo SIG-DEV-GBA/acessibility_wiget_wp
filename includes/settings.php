@@ -35,9 +35,10 @@ add_action( 'admin_init', function () {
         echo '<p>Configura los colores, posición y estilo del widget.</p>';
     }, 'fpvsi-a11y-settings' );
 
-    add_settings_field( 'fpvsi_activation_mode', 'Modo de activación', 'fpvsi_a11y_field_activation_mode', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_primary_color', 'Color primario', 'fpvsi_a11y_field_primary_color', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_accent_color', 'Color acento', 'fpvsi_a11y_field_accent_color', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
+    add_settings_field( 'fpvsi_hover_bg_color', 'Fondo filas activas', 'fpvsi_a11y_field_hover_bg_color', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
+    add_settings_field( 'fpvsi_text_color', 'Texto filas activas', 'fpvsi_a11y_field_text_color', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_position', 'Posición', 'fpvsi_a11y_field_position', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_offset', 'Desplazamiento (px)', 'fpvsi_a11y_field_offset', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
     add_settings_field( 'fpvsi_zindex', 'z-index', 'fpvsi_a11y_field_zindex', 'fpvsi-a11y-settings', 'fpvsi_a11y_appearance' );
@@ -72,18 +73,17 @@ add_action( 'admin_init', function () {
 function fpvsi_a11y_sanitize_config( $input ) {
     $output = [];
 
-    // Activation mode
-    if ( ! empty( $input['activation_mode'] ) ) {
-        $output['activation_mode'] = in_array( $input['activation_mode'], [ 'global', 'elementor' ], true )
-            ? $input['activation_mode']
-            : 'global';
-    }
-
     if ( ! empty( $input['primary_color'] ) ) {
         $output['primary_color'] = sanitize_hex_color( $input['primary_color'] );
     }
     if ( ! empty( $input['accent_color'] ) ) {
         $output['accent_color'] = sanitize_hex_color( $input['accent_color'] );
+    }
+    if ( ! empty( $input['hover_bg_color'] ) ) {
+        $output['hover_bg_color'] = sanitize_hex_color( $input['hover_bg_color'] );
+    }
+    if ( ! empty( $input['text_color'] ) ) {
+        $output['text_color'] = sanitize_hex_color( $input['text_color'] );
     }
     if ( ! empty( $input['position'] ) ) {
         $valid_pos = [ 'bottom-left', 'bottom-right', 'top-left', 'top-right' ];
@@ -157,21 +157,6 @@ function fpvsi_a11y_get_config() {
     return get_option( 'fpvsi_a11y_config', [] );
 }
 
-function fpvsi_a11y_field_activation_mode() {
-    $config = fpvsi_a11y_get_config();
-    $val = ! empty( $config['activation_mode'] ) ? $config['activation_mode'] : 'global';
-    $has_elementor = did_action( 'elementor/loaded' );
-    echo '<select name="fpvsi_a11y_config[activation_mode]">';
-    echo '<option value="global"' . selected( $val, 'global', false ) . '>Global — Todas las páginas (desde Ajustes)</option>';
-    echo '<option value="elementor"' . selected( $val, 'elementor', false ) . ( ! $has_elementor ? ' disabled' : '' ) . '>Solo Elementor — Usar widget de Elementor</option>';
-    echo '</select>';
-    if ( ! $has_elementor ) {
-        echo '<p class="description" style="color:#d63638;">Elementor no está activo. Instala y activa Elementor para usar este modo.</p>';
-    } else {
-        echo '<p class="description"><strong>Global:</strong> El widget aparece en todas las páginas con la config de Ajustes.<br><strong>Solo Elementor:</strong> El widget solo aparece donde coloques el widget de Elementor (ideal en footer global con Theme Builder).</p>';
-    }
-}
-
 function fpvsi_a11y_field_primary_color() {
     $config = fpvsi_a11y_get_config();
     $val = ! empty( $config['primary_color'] ) ? $config['primary_color'] : '#A10D5E';
@@ -190,6 +175,28 @@ function fpvsi_a11y_field_accent_color() {
     echo '<input type="text" id="fpvsi_accent_hex" name="fpvsi_a11y_config[accent_color]" value="' . esc_attr( $val ) . '" pattern="#[0-9a-fA-F]{6}" style="width:90px;font-family:monospace" onchange="document.getElementById(\'fpvsi_accent_picker\').value=this.value" />';
     echo '</div>';
     echo '<p class="description">Color de acento del widget (default: #F29429)</p>';
+}
+
+function fpvsi_a11y_field_hover_bg_color() {
+    $config = fpvsi_a11y_get_config();
+    $val = ! empty( $config['hover_bg_color'] ) ? $config['hover_bg_color'] : '';
+    $picker_val = ! empty( $val ) ? $val : '#dbeafe';
+    echo '<div style="display:flex;align-items:center;gap:8px;">';
+    echo '<input type="color" id="fpvsi_hoverbg_picker" value="' . esc_attr( $picker_val ) . '" onchange="document.getElementById(\'fpvsi_hoverbg_hex\').value=this.value" />';
+    echo '<input type="text" id="fpvsi_hoverbg_hex" name="fpvsi_a11y_config[hover_bg_color]" value="' . esc_attr( $val ) . '" pattern="#[0-9a-fA-F]{6}" style="width:90px;font-family:monospace" onchange="if(this.value){document.getElementById(\'fpvsi_hoverbg_picker\').value=this.value;}" placeholder="" />';
+    echo '</div>';
+    echo '<p class="description">Color sólido del fondo cuando una opción está activada. Vacío = tinte suave del primario.</p>';
+}
+
+function fpvsi_a11y_field_text_color() {
+    $config = fpvsi_a11y_get_config();
+    $val = ! empty( $config['text_color'] ) ? $config['text_color'] : '';
+    $picker_val = ! empty( $val ) ? $val : '#1e3a5f';
+    echo '<div style="display:flex;align-items:center;gap:8px;">';
+    echo '<input type="color" id="fpvsi_text_picker" value="' . esc_attr( $picker_val ) . '" onchange="document.getElementById(\'fpvsi_text_hex\').value=this.value" />';
+    echo '<input type="text" id="fpvsi_text_hex" name="fpvsi_a11y_config[text_color]" value="' . esc_attr( $val ) . '" pattern="#[0-9a-fA-F]{6}" style="width:90px;font-family:monospace" onchange="if(this.value){document.getElementById(\'fpvsi_text_picker\').value=this.value;}" placeholder="" />';
+    echo '</div>';
+    echo '<p class="description">Color del texto cuando una opción está activada. Vacío = color primario.</p>';
 }
 
 function fpvsi_a11y_field_position() {

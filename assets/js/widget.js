@@ -244,10 +244,12 @@
     config = config || {};
 
     // Merge config
-    var colors = { primary: DEFAULT_COLORS.primary, accent: DEFAULT_COLORS.accent };
+    var colors = { primary: DEFAULT_COLORS.primary, accent: DEFAULT_COLORS.accent, text: '', hoverBg: '' };
     if (config.colors) {
       if (config.colors.primary) colors.primary = config.colors.primary;
       if (config.colors.accent) colors.accent = config.colors.accent;
+      if (config.colors.text) colors.text = config.colors.text;
+      if (config.colors.hoverBg) colors.hoverBg = config.colors.hoverBg;
     }
 
     var position = config.position || 'bottom-left';
@@ -297,6 +299,15 @@
     r.style.setProperty('--a11y-accent', derived.accent);
     r.style.setProperty('--a11y-primary-rgb', derived.primaryRgb);
     r.style.setProperty('--a11y-accent-rgb', derived.accentRgb);
+    // Active row colors (only set when user customizes, CSS uses fallbacks otherwise)
+    if (colors.text) {
+      r.style.setProperty('--a11y-text', colors.text);
+    }
+    if (colors.hoverBg) {
+      r.style.setProperty('--a11y-active-bg', colors.hoverBg);
+      var hbRgb = hexToRgb(colors.hoverBg);
+      r.style.setProperty('--a11y-active-bg-rgb', hbRgb[0] + ', ' + hbRgb[1] + ', ' + hbRgb[2]);
+    }
 
     // ── State ──
     var state = cloneObj(A11Y_DEFAULTS);
@@ -953,7 +964,20 @@
   }
 
   /* ══════════════════════════════════════════════
+     Destroy (remove DOM + cleanup)
+     ══════════════════════════════════════════════ */
+  function destroy() {
+    var existing = document.querySelector('.fpvsi-a11y');
+    if (existing) existing.remove();
+    // Reset CSS vars
+    var r = document.documentElement;
+    ['--a11y-primary','--a11y-primary-dark','--a11y-primary-darker','--a11y-primary-light','--a11y-accent','--a11y-primary-rgb','--a11y-accent-rgb','--a11y-text','--a11y-active-bg','--a11y-active-bg-rgb'].forEach(function(v){
+      r.style.removeProperty(v);
+    });
+  }
+
+  /* ══════════════════════════════════════════════
      Expose
      ══════════════════════════════════════════════ */
-  window.FpvsiA11yWidget = { init: init };
+  window.FpvsiA11yWidget = { init: init, destroy: destroy };
 })();

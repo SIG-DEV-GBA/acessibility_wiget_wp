@@ -3,7 +3,7 @@
  * Plugin Name: FPVSI Accessibility Widget
  * Plugin URI:  https://github.com/SIG-DEV-GBA/accesibility_widged
  * Description: Widget de accesibilidad con lector de voz (TTS), ajustes visuales y selector de idiomas.
- * Version:     1.2.0
+ * Version:     1.3.0
  * Author:      SIG-DEV-GBA
  * Author URI:  https://github.com/SIG-DEV-GBA
  * License:     MIT
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'FPVSI_A11Y_VERSION', '1.2.0' );
+define( 'FPVSI_A11Y_VERSION', '1.3.0' );
 define( 'FPVSI_A11Y_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FPVSI_A11Y_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -54,6 +54,14 @@ function fpvsi_a11y_build_config() {
         'flagsUrl'   => FPVSI_A11Y_PLUGIN_URL . 'assets/flags/',
     ];
 
+    // Active row colors
+    if ( ! empty( $saved['hover_bg_color'] ) ) {
+        $config['colors']['hoverBg'] = $saved['hover_bg_color'];
+    }
+    if ( ! empty( $saved['text_color'] ) ) {
+        $config['colors']['text'] = $saved['text_color'];
+    }
+
     // Trigger icon
     if ( ! empty( $saved['trigger_icon'] ) ) {
         $config['triggerIcon'] = $saved['trigger_icon'];
@@ -81,16 +89,7 @@ function fpvsi_a11y_build_config() {
 }
 
 /**
- * Obtener modo de activación
- */
-function fpvsi_a11y_get_mode() {
-    $saved = get_option( 'fpvsi_a11y_config', [] );
-    return ! empty( $saved['activation_mode'] ) ? $saved['activation_mode'] : 'global';
-}
-
-/**
  * Enqueue assets en el frontend
- * CSS y JS se cargan siempre (Elementor widget los necesita también)
  */
 add_action( 'wp_enqueue_scripts', function () {
     wp_enqueue_style(
@@ -108,54 +107,16 @@ add_action( 'wp_enqueue_scripts', function () {
         true
     );
 
-    // Solo inyectar config global en modo "global"
-    if ( fpvsi_a11y_get_mode() === 'global' ) {
-        $config = fpvsi_a11y_build_config();
-        $json = wp_json_encode( $config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-        wp_add_inline_script( 'fpvsi-a11y', 'var fpvsiA11yConfig = ' . $json . ';', 'before' );
-    }
+    $config = fpvsi_a11y_build_config();
+    $json = wp_json_encode( $config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+    wp_add_inline_script( 'fpvsi-a11y', 'var fpvsiA11yConfig = ' . $json . ';', 'before' );
 });
 
 /**
  * Auto-init en footer
- * - Modo "global": usa config de Ajustes (inline fpvsiA11yConfig)
- * - Modo "elementor": usa config guardada por el widget de Elementor (wp_options)
  */
 add_action( 'wp_footer', function () {
-    $mode = fpvsi_a11y_get_mode();
-
-    if ( $mode === 'global' ) {
-        global $fpvsi_a11y_elementor_active;
-        if ( ! empty( $fpvsi_a11y_elementor_active ) ) {
-            return;
-        }
-        echo '<script>document.addEventListener("DOMContentLoaded",function(){if(typeof FpvsiA11yWidget!=="undefined"&&typeof fpvsiA11yConfig!=="undefined"){FpvsiA11yWidget.init(fpvsiA11yConfig);}});</script>';
-        return;
-    }
-
-    // Modo "elementor": leer config guardada por el widget de Elementor
-    $config = get_option( 'fpvsi_a11y_elementor_config', null );
-    if ( empty( $config ) ) {
-        return; // No se ha configurado aún desde Elementor
-    }
-    // Asegurar flagsUrl correcto
-    $config['flagsUrl'] = FPVSI_A11Y_PLUGIN_URL . 'assets/flags/';
-    $json = wp_json_encode( $config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-    echo '<script>document.addEventListener("DOMContentLoaded",function(){if(typeof FpvsiA11yWidget!=="undefined"){FpvsiA11yWidget.init(' . $json . ');}});</script>';
-});
-
-/**
- * Integración con Elementor
- */
-add_action( 'plugins_loaded', function () {
-    if ( ! did_action( 'elementor/loaded' ) ) {
-        return;
-    }
-    // Registrar widget de Elementor
-    add_action( 'elementor/widgets/register', function ( $widgets_manager ) {
-        require_once FPVSI_A11Y_PLUGIN_DIR . 'includes/elementor-widget.php';
-        $widgets_manager->register( new \Fpvsi_A11y_Elementor_Widget() );
-    });
+    echo '<script>document.addEventListener("DOMContentLoaded",function(){if(typeof FpvsiA11yWidget!=="undefined"&&typeof fpvsiA11yConfig!=="undefined"){FpvsiA11yWidget.init(fpvsiA11yConfig);}});</script>';
 });
 
 /**
