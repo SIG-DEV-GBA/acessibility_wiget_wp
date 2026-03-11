@@ -3,7 +3,7 @@
  * Plugin Name: FPVSI Accessibility Widget
  * Plugin URI:  https://github.com/SIG-DEV-GBA/accesibility_widged
  * Description: Widget de accesibilidad con lector de voz (TTS), ajustes visuales y selector de idiomas.
- * Version:     1.3.0
+ * Version:     1.4.0
  * Author:      SIG-DEV-GBA
  * Author URI:  https://github.com/SIG-DEV-GBA
  * License:     MIT
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'FPVSI_A11Y_VERSION', '1.3.0' );
+define( 'FPVSI_A11Y_VERSION', '1.4.0' );
 define( 'FPVSI_A11Y_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FPVSI_A11Y_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

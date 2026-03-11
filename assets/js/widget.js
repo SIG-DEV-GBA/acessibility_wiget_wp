@@ -378,16 +378,20 @@
     var posClass = 'fpvsi-a11y--' + position;
     var rootStyle = { zIndex: zIndex };
 
-    // Aplicar offsets según posición
+    // Aplicar offsets según posición (reset opposing properties)
     if (position.indexOf('bottom') !== -1) {
       rootStyle.bottom = offsetY + 'px';
+      rootStyle.top = 'auto';
     } else {
       rootStyle.top = offsetY + 'px';
+      rootStyle.bottom = 'auto';
     }
     if (position.indexOf('left') !== -1) {
       rootStyle.left = offsetX + 'px';
+      rootStyle.right = 'auto';
     } else {
       rootStyle.right = offsetX + 'px';
+      rootStyle.left = 'auto';
     }
 
     root = el('div', { className: 'fpvsi-a11y ' + posClass, style: rootStyle });
@@ -649,10 +653,45 @@
     footer.appendChild(el('p', { className: 'fpvsi-a11y__footer-text' }, labels.footer));
     panel.appendChild(footer);
 
+    // ── Mobile detection ──
+    var isMobile = false;
+    var mq = window.matchMedia('(max-width: 767px)');
+    isMobile = mq.matches;
+    mq.addEventListener('change', function (e) {
+      isMobile = e.matches;
+      updateMobileDesktop();
+    });
+
+    // ── Handle (mobile, inside panel before header) ──
+    var handle = el('div', { className: 'fpvsi-a11y__handle' });
+    handle.appendChild(el('div', { className: 'fpvsi-a11y__handle-bar' }));
+    panel.insertBefore(handle, panel.firstChild);
+
     panelWrap.appendChild(panel);
+
+    // ── Backdrop (mobile) ──
+    var backdrop = el('div', {
+      className: 'fpvsi-a11y__backdrop',
+      style: { zIndex: zIndex },
+      onClick: function () { togglePanel(false); }
+    });
+    root.appendChild(backdrop);
+
+    // Panel wrap z-index for mobile (above backdrop)
     root.appendChild(panelWrap);
 
-    // ── FAB trigger ──
+    // ── Mobile tab trigger ──
+    var tabBtn = el('button', {
+      className: 'fpvsi-a11y__tab',
+      'aria-label': labels.trigger,
+      'aria-expanded': 'false',
+      style: { zIndex: zIndex },
+      onClick: function () { togglePanel(!open); }
+    });
+    setHtml(tabBtn, icon(triggerIcon));
+    root.appendChild(tabBtn);
+
+    // ── FAB trigger (desktop) ──
     triggerBtn = el('button', {
       className: 'fpvsi-a11y__trigger fpvsi-a11y__trigger--default',
       'aria-label': labels.trigger,
@@ -673,10 +712,11 @@
 
     // ── Initial render ──
     updateAll();
+    updateMobileDesktop();
 
     // ── Outside click / Esc ──
     document.addEventListener('mousedown', function (e) {
-      if (open && root && !root.contains(e.target)) {
+      if (open && !isMobile && root && !root.contains(e.target)) {
         togglePanel(false);
       }
     });
@@ -691,6 +731,15 @@
       open = val;
       panelWrap.className = 'fpvsi-a11y__panel-wrap ' + (open ? 'fpvsi-a11y__panel-wrap--open' : 'fpvsi-a11y__panel-wrap--closed');
       triggerBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      tabBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+      // Backdrop (mobile)
+      backdrop.className = 'fpvsi-a11y__backdrop' + (open ? ' fpvsi-a11y__backdrop--visible' : '');
+
+      // Panel z-index for mobile (above backdrop)
+      if (isMobile) {
+        panelWrap.style.zIndex = zIndex + 1;
+      }
 
       // Animate rows on open
       if (open) {
@@ -703,6 +752,7 @@
       }
 
       updateTrigger();
+      updateTab();
     }
 
     function changeFontSize(d) {
@@ -872,7 +922,22 @@
       Object.keys(toggleRows).forEach(function (k) { updateToggleRow(k); });
       updateHeader();
       updateTrigger();
+      updateTab();
       updateTts();
+    }
+
+    function updateTab() {
+      var dirty = isDirty();
+      tabBtn.className = 'fpvsi-a11y__tab' + (dirty ? ' fpvsi-a11y__tab--dirty' : '');
+    }
+
+    function updateMobileDesktop() {
+      // CSS handles show/hide via media queries, but we ensure z-index is correct
+      if (isMobile) {
+        panelWrap.style.zIndex = zIndex + 1;
+      } else {
+        panelWrap.style.zIndex = '';
+      }
     }
 
     function updateHeader() {
